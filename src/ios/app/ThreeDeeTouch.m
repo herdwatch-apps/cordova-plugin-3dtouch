@@ -71,7 +71,7 @@
             icon = [UIApplicationShortcutIcon iconWithTemplateImageName:iconTemplate];
         }
         
-        [items addObject:[[UIApplicationShortcutItem alloc]initWithType: type localizedTitle: title localizedSubtitle: subtitle icon: icon userInfo: nil]];
+        [items insertObject:[[UIApplicationShortcutItem alloc]initWithType: type localizedTitle: title localizedSubtitle: subtitle icon: icon userInfo: nil] atIndex:0];
     }
     
     [UIApplication sharedApplication].shortcutItems = items;
