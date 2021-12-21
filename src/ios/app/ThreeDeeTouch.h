@@ -2,9 +2,7 @@
 
 @interface ThreeDeeTouch : CDVPlugin
 
-@property BOOL initDone;
-
-- (void) deviceIsReady:(CDVInvokedUrlCommand*)command;
+- (void) performActionForShortcutItem: (UIApplicationShortcutItem *)shortcutItem;
 
 - (void) isAvailable:(CDVInvokedUrlCommand*)command;
 

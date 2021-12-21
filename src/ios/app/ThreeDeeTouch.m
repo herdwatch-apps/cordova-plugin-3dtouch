@@ -3,10 +3,32 @@
 #import "UIKit/UITouch.h"
 #import "ThreeDeeTouch.h"
 
-@implementation ThreeDeeTouch
+@implementation ThreeDeeTouch {
+    NSMutableDictionary *pendingShortcutItemAction;
+    NSString * quickActionListenerCallbackId;
+};
 
-- (void) deviceIsReady:(CDVInvokedUrlCommand *)command {
-    self.initDone = YES;
+- (void) performActionForShortcutItem: (UIApplicationShortcutItem *)shortcutItem {
+    NSMutableDictionary * item = [NSMutableDictionary dictionaryWithCapacity:2];
+    [item setObject:shortcutItem.type forKey:@"type"];
+    [item setObject:shortcutItem.localizedTitle forKey:@"title"];
+    if (quickActionListenerCallbackId) {
+        CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:item];
+        pluginResult.keepCallback = [NSNumber numberWithBool:YES];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:quickActionListenerCallbackId];
+    } else {
+        pendingShortcutItemAction = item;
+    }
+}
+
+- (void) registerQuickActionListener:(CDVInvokedUrlCommand *)command {
+    quickActionListenerCallbackId = command.callbackId;
+    if (pendingShortcutItemAction) {
+        CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:pendingShortcutItemAction];
+        pluginResult.keepCallback = [NSNumber numberWithBool:YES];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:quickActionListenerCallbackId];
+        pendingShortcutItemAction = nil;
+    }
 }
 
 - (void) isAvailable:(CDVInvokedUrlCommand *)command {
@@ -33,22 +55,18 @@
 }
 
 - (void) enableLinkPreview:(CDVInvokedUrlCommand *)command {
-#if !WK_WEB_VIEW_ONLY
     if ([self.webView class] == [UIWebView class]) {
         UIWebView *w = (UIWebView*)self.webView;
         w.allowsLinkPreview = YES;
     }
-#endif
     [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_OK] callbackId:command.callbackId];
 }
 
 - (void) disableLinkPreview:(CDVInvokedUrlCommand *)command {
-#if !WK_WEB_VIEW_ONLY
     if ([self.webView class] == [UIWebView class]) {
         UIWebView *w = (UIWebView*)self.webView;
         w.allowsLinkPreview = NO;
     }
-#endif
     [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_OK] callbackId:command.callbackId];
 }
 
@@ -152,4 +170,3 @@ double lastEvent = 0;
     }
 }
 @end
-
