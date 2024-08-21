@@ -73,7 +73,7 @@
   function configureQuickActions() {
     ThreeDeeTouch.configureQuickActions([
       {
-        type: 'checkin', // optional, but can be used in the onHomeIconPressed callback
+        type: 'checkin', // optional, but can be used in the registerQuickActionListener callback
         title: 'Check in', // mandatory
         subtitle: 'Quickly check in', // optional
         iconType: 'compose' // optional
@@ -98,7 +98,7 @@
 
   // TODO should be in generic spot (index.js) so it will always be triggered, even on warm start from a page deep down in the app
   document.addEventListener('deviceready', function() {
-    ThreeDeeTouch.onHomeIconPressed = function(payload) {
+    ThreeDeeTouch.registerQuickActionListener = function(payload) {
       console.log("Icon pressed. Type: " + payload.type + ". Title: " + payload.title + ".");
       if (payload.type == 'checkin') {
         document.location = 'checkin.html';

@@ -26,12 +26,18 @@ Add 3D Touch capabilities to your Cordova app:
 
 Latest stable version from npm:
 ```
-$ cordova plugin add cordova-plugin-3dtouch
+$ cordova plugin add @herdwatch-apps/cordova-plugin-3dtouch
+```
+
+Ionic:
+```
+$ npm i @awesome-cordova-plugins/three-dee-touch
+$ ionic cordova plugin add @herdwatch-apps/cordova-plugin-3dtouch
 ```
 
 Bleeding edge version from Github:
 ```
-$ cordova plugin add https://github.com/EddyVerbruggen/cordova-plugin-3dtouch
+$ cordova plugin add https://github.com/herdwatch-apps/cordova-plugin-3dtouch
 ```
 
 `ThreeDeeTouch.js` is brought in automatically.
@@ -101,7 +107,7 @@ the icon was used to launch your app. So make sure it's unique amongst your icon
 ```js
   ThreeDeeTouch.configureQuickActions([
     {
-      type: 'checkin', // optional, but can be used in the onHomeIconPressed callback
+      type: 'checkin', // optional, but can be used in the registerQuickActionListener callback
       title: 'Check in', // mandatory
       subtitle: 'Quickly check in', // optional
       iconType: 'Compose' // optional
@@ -124,13 +130,13 @@ the icon was used to launch your app. So make sure it's unique amongst your icon
   ]);
 ```
 
-### onHomeIconPressed
+### registerQuickActionListener
 When a home icon is pressed, your app launches and this JS callback is invoked. I found it worked
 reliable when you use it like this (you should recognize the `type` params used previously):
 
 ```js
   document.addEventListener('deviceready', function () {
-    ThreeDeeTouch.onHomeIconPressed = function (payload) {
+    ThreeDeeTouch.registerQuickActionListener = function (payload) {
       console.log("Icon pressed. Type: " + payload.type + ". Title: " + payload.title + ".");
       if (payload.type == 'checkin') {
         document.location = 'checkin.html';
@@ -213,9 +219,11 @@ See the commented section in `plugin.xml` about static icon localization.
 
 #### UIApplicationShortcutItemType
 This is the same as the `type` param of `configureQuickActions`, so it's what you'll receive in your
-`onHomeIconPressed` as `payload.type`. Just do something cool with that info.
+`registerQuickActionListener` as `payload.type`. Just do something cool with that info.
 
 ## 6. Changelog
+* 1.4.0 Update documentation
+* 1.3.9 Refactor replace onHomeIconPressed with registerQuickActionListener, thanks [dzNavitski](https://github.com/dzNavitski/cordova-plugin-3dtouch)!
 * 1.3.8 Support WKWebViewOnly build settings, thanks [#45](https://github.com/EddyVerbruggen/cordova-plugin-3dtouch/pull/45)!
 * 1.3.7 Ionic 4 compat, thanks [#43](https://github.com/EddyVerbruggen/cordova-plugin-3dtouch/issues/43)!
 * 1.3.6 Get back the subtitle when a home icon was pressed, thanks [#27](https://github.com/EddyVerbruggen/cordova-plugin-3dtouch/issues/27)!
