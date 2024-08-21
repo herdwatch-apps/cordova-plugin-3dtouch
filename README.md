@@ -222,6 +222,7 @@ This is the same as the `type` param of `configureQuickActions`, so it's what yo
 `registerQuickActionListener` as `payload.type`. Just do something cool with that info.
 
 ## 6. Changelog
+* 1.4.1 Replace UIWebView with WKWebView
 * 1.4.0 Update documentation
 * 1.3.9 Refactor replace onHomeIconPressed with registerQuickActionListener, thanks [dzNavitski](https://github.com/dzNavitski/cordova-plugin-3dtouch)!
 * 1.3.8 Support WKWebViewOnly build settings, thanks [#45](https://github.com/EddyVerbruggen/cordova-plugin-3dtouch/pull/45)!

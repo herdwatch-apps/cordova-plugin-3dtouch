@@ -1,4 +1,5 @@
 #import <Cordova/CDVPlugin.h>
+#import <WebKit/WebKit.h>
 
 @interface ThreeDeeTouch : CDVPlugin
 
