@@ -26,13 +26,13 @@ Add 3D Touch capabilities to your Cordova app:
 
 Latest stable version from npm:
 ```
-$ cordova plugin add @herdwatch-apps/cordova-plugin-3dtouch
+$ cordova plugin add @herdwatch/cordova-plugin-3dtouch
 ```
 
 Ionic:
 ```
 $ npm i @awesome-cordova-plugins/three-dee-touch
-$ ionic cordova plugin add @herdwatch-apps/cordova-plugin-3dtouch
+$ ionic cordova plugin add @herdwatch/cordova-plugin-3dtouch
 ```
 
 Bleeding edge version from Github:
