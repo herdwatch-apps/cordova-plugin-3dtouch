@@ -1,4 +1,16 @@
 # 3D Touch Cordova plugin
+
+## Why this fork exists
+
+Forked from [upstream](https://github.com/dzNavitski/cordova-plugin-3dtouch) because the plugin's native iOS code still used the deprecated `UIWebView` API, and our app only ships a `WKWebView`.
+
+Published as [`@herdwatch/cordova-plugin-3dtouch`](https://www.npmjs.com/package/@herdwatch/cordova-plugin-3dtouch).
+
+Changes from upstream:
+- Replaced the deprecated `UIWebView` with `WKWebView` in the native iOS plugin (`ThreeDeeTouch.h`/`.m`), removing the old `#if !WK_WEB_VIEW_ONLY` conditional entirely
+- Renamed the JS callback API from `onHomeIconPressed` to `registerQuickActionListener` to match upstream's later API
+- Republished the package under the `@herdwatch` npm scope
+
 by [Eddy Verbruggen](http://twitter.com/eddyverbruggen)
 
 ## 0. Index
