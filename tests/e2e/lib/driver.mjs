@@ -91,7 +91,47 @@ export const isBrowserStack = () =>
     ? /browserstack/i.test(process.env.APPIUM_URL)
     : Boolean(process.env.BROWSERSTACK_USERNAME && process.env.BROWSERSTACK_ACCESS_KEY);
 
+/**
+ * True when the run targets Android. Explicit rather than guessed: the same helper drives both, and
+ * silently picking a platform from whichever device happens to be plugged in is how a run ends up
+ * measuring the wrong thing.
+ */
+export const isAndroid = () => (process.env.HW_TEST_PLATFORM ?? 'ios').toLowerCase() === 'android';
+
 export async function createSession({ udid, bundleId, firebaseDebug = false, forceLaunch = false }) {
+  if (isAndroid()) {
+    // The web half of login.mjs is the same on both platforms -- it is the same Angular app -- so
+    // only the session differs. autoGrantPermissions is the Android counterpart of iOS's
+    // autoAcceptAlerts: the runtime permission dialogs are granted before they can cover the web
+    // view, which is what makes the login reachable at all on a fresh install.
+    const android = {
+      platformName: 'Android',
+      'appium:automationName': 'UiAutomator2',
+      'appium:udid': udid ?? process.env.ANDROID_SERIAL,
+      'appium:appPackage': bundleId ?? 'com.frs.hwfab',
+      'appium:appActivity': process.env.ANDROID_ACTIVITY ?? 'com.frs.hwfab.MainActivity',
+      'appium:noReset': true,
+      'appium:fullReset': false,
+      'appium:autoGrantPermissions': true,
+      'appium:autoWebviewTimeout': 20000,
+      'appium:newCommandTimeout': 900,
+    };
+    if (forceLaunch) {
+      android['appium:forceAppLaunch'] = true;
+    }
+    const res = await call(
+      'POST',
+      '/session',
+      { capabilities: { alwaysMatch: android, firstMatch: [{}] } },
+      { timeoutMs: SESSION_TIMEOUT_MS },
+    );
+    const id = res?.value?.sessionId;
+    if (!id) {
+      throw new Error(`session not created: ${JSON.stringify(res).slice(0, 500)}`);
+    }
+    return new Session(id, res.value.capabilities ?? {});
+  }
+
   const capabilities = isBrowserStack()
     ? {
         // The cloud rejects the local-device capabilities outright: there is no udid to attach to
@@ -149,6 +189,9 @@ export async function createSession({ udid, bundleId, firebaseDebug = false, for
         'appium:webviewConnectTimeout': 20000,
         'appium:newCommandTimeout': 900,
         'appium:wdaLaunchTimeout': 240000,
+        // A simulator can report itself booted through `simctl bootstatus` and still not be ready
+        // for XCUITest; the default 120s ran out on a CI runner.
+        'appium:simulatorStartupTimeout': 300000,
       };
 
   if (isBrowserStack() && !process.env.BS_APP_URL) {

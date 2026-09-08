@@ -37,8 +37,8 @@
   },
   "homepage": "https://github.com/herdwatch-apps/cordova-plugin-3dtouch#readme",
   "scripts": {
-    "test:ios": "cordova-paramedic --platform ios@8.1.1 --plugin . --ci --verbose --cleanUpAfterRun",
-    "test:ios7": "cordova-paramedic --platform ios@7.1.1 --plugin . --ci --verbose --cleanUpAfterRun",
+    "test:ios": "cordova-paramedic --platform ios@8.1.1 --target 'iPhone-1[6-9]' --plugin . --ci --verbose --cleanUpAfterRun",
+    "test:ios7": "cordova-paramedic --platform ios@7.1.1 --target 'iPhone-1[6-9]' --plugin . --ci --verbose --cleanUpAfterRun",
     "test:e2e": "tests/e2e/run.sh"
   },
   "devDependencies": {

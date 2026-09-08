@@ -74,7 +74,10 @@ jobs:
 
       - run: npm ci
 
-      - run: npx cordova-paramedic --platform ios@${{ matrix.cordovaIos }} --plugin . --ci --verbose --cleanUpAfterRun
+      # --target is a regex over the simulator list, and paramedic's default (^iPhone) matches
+      # nothing because those lines are indented -- it then falls back to "the first available",
+      # which is how a matrix row ends up testing something else entirely.
+      - run: npx cordova-paramedic --platform ios@${{ matrix.cordovaIos }} --target 'iPhone-1[6-9]' --plugin . --ci --verbose --cleanUpAfterRun
 
   quick-action:
     name: quick action delivery, iOS ${{ matrix.ios }}
@@ -139,6 +142,10 @@ jobs:
           fi
           xcrun simctl boot "$udid"
           xcrun simctl bootstatus "$udid" -b
+          # bootstatus returning is not the same as ready for XCUITest: a run failed with "the
+          # simulator has failed to finish booting after 120s" right after this succeeded. Bringing
+          # up Simulator.app gets it the rest of the way.
+          open -a Simulator --args -CurrentDeviceUDID "$udid"
           echo "IOS_UDID=$udid" >> "$GITHUB_ENV"
 
       - name: Quick action, cold start and already running
