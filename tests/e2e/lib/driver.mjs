@@ -1,13 +1,10 @@
 /**
- * Copied from ngx-app's appium/lib/driver.mjs so this fixture stands alone. Keep the two in step
- * when either learns something.
- *
  * Minimal Appium client over plain fetch. No webdriverio: the whole harness needs a session, a
  * context switch, a tap and script evaluation, and pinning another dependency tree to get them
  * is not worth it.
  *
- * Two things here exist because of how this app behaves on a real device, and both cost hours to
- * find:
+ * Two things here exist because of how a Cordova app behaves on a real device, and both cost hours
+ * to find:
  *
  * - W3C pointer actions do NOT reach the Cordova web view. Taps must go through `mobile: tap`.
  *   They do reach SpringBoard, though, so a long press on an app icon can use either.
@@ -91,47 +88,9 @@ export const isBrowserStack = () =>
     ? /browserstack/i.test(process.env.APPIUM_URL)
     : Boolean(process.env.BROWSERSTACK_USERNAME && process.env.BROWSERSTACK_ACCESS_KEY);
 
-/**
- * True when the run targets Android. Explicit rather than guessed: the same helper drives both, and
- * silently picking a platform from whichever device happens to be plugged in is how a run ends up
- * measuring the wrong thing.
- */
-export const isAndroid = () => (process.env.HW_TEST_PLATFORM ?? 'ios').toLowerCase() === 'android';
-
+// iOS only, deliberately: plugin.xml declares no other platform, so there is no Android build of
+// this plugin for a session to attach to.
 export async function createSession({ udid, bundleId, firebaseDebug = false, forceLaunch = false }) {
-  if (isAndroid()) {
-    // The web half of login.mjs is the same on both platforms -- it is the same Angular app -- so
-    // only the session differs. autoGrantPermissions is the Android counterpart of iOS's
-    // autoAcceptAlerts: the runtime permission dialogs are granted before they can cover the web
-    // view, which is what makes the login reachable at all on a fresh install.
-    const android = {
-      platformName: 'Android',
-      'appium:automationName': 'UiAutomator2',
-      'appium:udid': udid ?? process.env.ANDROID_SERIAL,
-      'appium:appPackage': bundleId ?? 'com.frs.hwfab',
-      'appium:appActivity': process.env.ANDROID_ACTIVITY ?? 'com.frs.hwfab.MainActivity',
-      'appium:noReset': true,
-      'appium:fullReset': false,
-      'appium:autoGrantPermissions': true,
-      'appium:autoWebviewTimeout': 20000,
-      'appium:newCommandTimeout': 900,
-    };
-    if (forceLaunch) {
-      android['appium:forceAppLaunch'] = true;
-    }
-    const res = await call(
-      'POST',
-      '/session',
-      { capabilities: { alwaysMatch: android, firstMatch: [{}] } },
-      { timeoutMs: SESSION_TIMEOUT_MS },
-    );
-    const id = res?.value?.sessionId;
-    if (!id) {
-      throw new Error(`session not created: ${JSON.stringify(res).slice(0, 500)}`);
-    }
-    return new Session(id, res.value.capabilities ?? {});
-  }
-
   const capabilities = isBrowserStack()
     ? {
         // The cloud rejects the local-device capabilities outright: there is no udid to attach to
@@ -155,7 +114,7 @@ export async function createSession({ udid, bundleId, firebaseDebug = false, for
         'bstack:options': {
           userName: process.env.BROWSERSTACK_USERNAME,
           accessKey: process.env.BROWSERSTACK_ACCESS_KEY,
-          projectName: process.env.BS_PROJECT ?? 'ngx-app',
+          projectName: process.env.BS_PROJECT ?? 'cordova-plugin-3dtouch',
           buildName: process.env.BS_BUILD ?? 'appium harness',
           sessionName: process.env.BS_SESSION ?? 'probe',
           // Left on deliberately. Masking would hide a test account's password that is worth
@@ -172,20 +131,23 @@ export async function createSession({ udid, bundleId, firebaseDebug = false, for
         // Never reset: the app under test is signed in, and a reset would wipe that.
         'appium:noReset': true,
         'appium:fullReset': false,
-        // A fresh install raises several permission dialogs one after another -- location,
-        // Bluetooth, notifications -- and each one blocks the web view until it is answered.
-        // There is no way to pre-grant them on a real device, so let WebDriverAgent answer them.
-        // HW_TEST_NO_AUTO_ALERTS turns this off so login.mjs has to answer them itself, which is
-        // how that path gets tested on the desk instead of on metered cloud minutes.
-        'appium:autoAcceptAlerts': !process.env.HW_TEST_NO_AUTO_ALERTS,
+        // A fresh install can raise permission dialogs one after another, and each one blocks the
+        // web view until it is answered. There is no way to pre-grant them on a real device, so
+        // let WebDriverAgent answer them. NO_AUTO_ALERTS turns that off when a test wants to
+        // assert on a dialog itself.
+        'appium:autoAcceptAlerts': !process.env.NO_AUTO_ALERTS,
         // Do not wait for the app to go idle before acting. This is the single setting behind two
         // long-standing mysteries here: a tap that sat ~10s before the finger went down (SpringBoard
         // with a menu open never settles), and a long press whose hold ran far past the requested
         // duration and tipped the Home Screen into icon-rearrange mode. Named waitForQuiescence in
         // older XCUITest drivers; that name is gone as of 12.x and is silently ignored.
         'appium:waitForIdleTimeout': 0,
-        'appium:xcodeOrgId': process.env.XCODE_ORG_ID ?? 'GF3B722BQU',
-        'appium:xcodeSigningId': 'Apple Development',
+        // Only consulted for a real-device run, which has to sign WebDriverAgent with a team of
+        // its own; a simulator needs neither. No default on purpose -- an identifier belonging to
+        // somebody else's Apple team is worse than none.
+        ...(process.env.XCODE_ORG_ID
+          ? { 'appium:xcodeOrgId': process.env.XCODE_ORG_ID, 'appium:xcodeSigningId': 'Apple Development' }
+          : {}),
         'appium:webviewConnectTimeout': 20000,
         'appium:newCommandTimeout': 900,
         'appium:wdaLaunchTimeout': 240000,
