@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one
+    or more contributor license agreements.  See the NOTICE file
+    distributed with this work for additional information
+    regarding copyright ownership.  The ASF licenses this file
+    to you under the Apache License, Version 2.0 (the
+    "License"); you may not use this file except in compliance
+    with the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing,
+    software distributed under the License is distributed on an
+    "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+     KIND, either express or implied.  See the License for the
+    specific language governing permissions and limitations
+    under the License.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="msapplication-tap-highlight" content="no">
+  <meta name="viewport" content="initial-scale=1, width=device-width, viewport-fit=cover">
+  <link rel="stylesheet" href="css/index.css">
+  <title>3D Touch Demo</title>
+</head>
+<body>
+<h1>3D Touch</h1>
+<p class="lede">Every call the plugin exposes, on one page.</p>
+
+<div id="deviceready">
+  <p class="event listening">Waiting for deviceready&hellip;</p>
+  <p class="event received">Device is ready.</p>
+</div>
+
+<div class="card">
+  <h2>Quick actions</h2>
+  <button id="configure" type="button">Configure quick actions</button>
+  <p class="lede" style="margin:10px 0 0;font-size:14px">
+    Then background the app and long-press its icon on the Home Screen. A fresh install already
+    offers &ldquo;Check in&rdquo; &mdash; that one is static, declared in <code>config.xml</code>.
+  </p>
+</div>
+
+<div class="card">
+  <h2>Force touch and link preview</h2>
+  <button id="available" type="button">isAvailable?</button>
+  <button id="watch" type="button">Watch force touches</button>
+  <button id="enable-preview" type="button">Enable link preview</button>
+  <button id="disable-preview" type="button">Disable link preview</button>
+  <p style="margin:10px 0 0">
+    <a href="https://example.com">A link to press and hold</a><br>
+    <a href="checkin.html">Go to checkin.html</a>
+  </p>
+</div>
+
+<div class="card">
+  <h2>Result</h2>
+  <p id="result"></p>
+</div>
+
+<div class="card">
+  <h2>Log</h2>
+  <p id="log"></p>
+</div>
+
+<script src="cordova.js"></script>
+<script src="js/index.js"></script>
+</body>
+</html>

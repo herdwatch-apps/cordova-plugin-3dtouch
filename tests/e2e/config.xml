@@ -1,0 +1,27 @@
+<?xml version='1.0' encoding='utf-8'?>
+<widget id="com.example.quickaction" version="1.0.0" xmlns="http://www.w3.org/ns/widgets">
+    <name>QuickAction</name>
+    <description>Home Screen quick action under UIScene</description>
+    <content src="index.html" />
+    <allow-intent href="http://*/*" />
+    <allow-intent href="https://*/*" />
+    <platform name="ios">
+        <preference name="WKWebViewOnly" value="true" />
+        <!-- One static quick action, declared the way a consumer would: in Info.plist, so iOS
+             offers it before the app has ever run. Same title and type as demo/config.xml, so the
+             two agree on what a quick action looks like. A system icon type is used rather than an
+             icon file, so the fixture ships no assets. -->
+        <edit-config file="*-Info.plist" mode="merge" target="UIApplicationShortcutItems">
+            <array>
+                <dict>
+                    <key>UIApplicationShortcutItemIconType</key>
+                    <string>UIApplicationShortcutIconTypeCompose</string>
+                    <key>UIApplicationShortcutItemTitle</key>
+                    <string>Check in</string>
+                    <key>UIApplicationShortcutItemType</key>
+                    <string>checkin</string>
+                </dict>
+            </array>
+        </edit-config>
+    </platform>
+</widget>

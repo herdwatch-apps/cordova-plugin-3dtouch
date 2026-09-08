@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="msapplication-tap-highlight" content="no">
+  <meta name="viewport" content="initial-scale=1, width=device-width, viewport-fit=cover">
+  <link rel="stylesheet" href="css/index.css">
+  <title>Check in</title>
+</head>
+<body>
+<h1>Check in</h1>
+<p class="lede">Reached from the static quick action, or from the link on the home page.</p>
+
+<div id="deviceready">
+  <p class="event listening">Waiting for deviceready&hellip;</p>
+  <p class="event received">Device is ready.</p>
+</div>
+
+<!-- js/index.js registers the quick-action listener here too, on purpose: a quick action can
+     launch the app straight onto this page, and a listener that only existed on the home page
+     would miss it. -->
+<div class="card">
+  <h2>Result</h2>
+  <p id="result"></p>
+</div>
+
+<div class="card">
+  <h2>Log</h2>
+  <p id="log"></p>
+</div>
+
+<p><a href="index.html">Back home</a></p>
+
+<script src="cordova.js"></script>
+<script src="js/index.js"></script>
+</body>
+</html>

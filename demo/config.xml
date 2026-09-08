@@ -1,0 +1,30 @@
+<?xml version='1.0' encoding='utf-8'?>
+<widget id="com.example.threedeetouch" version="1.0.0" xmlns="http://www.w3.org/ns/widgets">
+    <name>3D Touch Demo</name>
+    <description>Home Screen quick actions, force touch and link preview, on one page.</description>
+    <content src="index.html"/>
+    <allow-intent href="http://*/*"/>
+    <allow-intent href="https://*/*"/>
+
+    <platform name="ios">
+        <preference name="WKWebViewOnly" value="true"/>
+
+        <!-- One STATIC quick action, declared here rather than from JavaScript. This is the half of
+             the feature that exists before the app has ever been launched: iOS reads it out of
+             Info.plist, so long-pressing the icon on a fresh install already offers it. The other
+             three come from configureQuickActions() on the page, and only appear once the app has
+             run at least once. A system icon type is used so the demo ships no image assets. -->
+        <edit-config file="*-Info.plist" mode="merge" target="UIApplicationShortcutItems">
+            <array>
+                <dict>
+                    <key>UIApplicationShortcutItemIconType</key>
+                    <string>UIApplicationShortcutIconTypeCompose</string>
+                    <key>UIApplicationShortcutItemTitle</key>
+                    <string>Check in</string>
+                    <key>UIApplicationShortcutItemType</key>
+                    <string>checkin</string>
+                </dict>
+            </array>
+        </edit-config>
+    </platform>
+</widget>

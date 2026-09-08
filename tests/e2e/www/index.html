@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>QuickAction</title>
+    <style>
+      body { font: 17px/1.4 -apple-system, sans-serif; margin: 0; padding: 24px; }
+      #state { padding: 16px; border-radius: 12px; background: #eee; }
+      body.shortcut-received #state { background: #1a7f37; color: #fff; }
+      #log { margin-top: 16px; font-size: 13px; white-space: pre-wrap; color: #555; }
+    </style>
+  </head>
+  <body>
+    <h1>Quick action fixture</h1>
+    <!-- The probe asserts on body.shortcut-received and reads #state. Nothing else is here on
+         purpose: the app under test is the plugin, not a UI. -->
+    <div id="state" data-cy="shortcut-state">waiting for a quick action</div>
+    <div id="log"></div>
+    <script src="cordova.js"></script>
+    <script src="js/index.js"></script>
+  </body>
+</html>

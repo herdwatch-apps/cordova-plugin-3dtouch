@@ -10,8 +10,76 @@ Changes from upstream:
 - Replaced the deprecated `UIWebView` with `WKWebView` in the native iOS plugin (`ThreeDeeTouch.h`/`.m`), removing the old `#if !WK_WEB_VIEW_ONLY` conditional entirely
 - Renamed the JS callback API from `onHomeIconPressed` to `registerQuickActionListener` to match upstream's later API
 - Republished the package under the `@herdwatch` npm scope
+- Delivered quick actions under `UIScene` (see below), which cordova-ios 8 adopts
 
 by [Eddy Verbruggen](http://twitter.com/eddyverbruggen)
+
+## Quick actions under UIScene (cordova-ios 8)
+
+From cordova-ios 8 the app declares `UIApplicationSceneManifest`, and UIKit then stops calling
+`application:performActionForShortcutItem:` — the only hook this plugin had. Quick actions arrive
+two other ways instead, and neither reached the plugin:
+
+- **app already running**: UIKit calls `windowScene:performActionForShortcutItem:` on the scene
+  delegate;
+- **app launched by the action**: there is no callback at all. The item comes in as
+  `UISceneConnectionOptions.shortcutItem` while the scene connects.
+
+Both are now handled on `CDVSceneDelegate`. The launch case is a swizzle of
+`scene:willConnectToSession:options:` rather than a category method, because `CDVSceneDelegate`
+already implements that selector to forward URL contexts — a category would REPLACE it and take
+deep links down with it — so the original is called first. The item is then held until the plugin
+exists, since a plugin is instantiated after the scene connects; without that a cold start would
+deliver the action to nothing.
+
+`AppDelegate+threedeetouch.m` keeps the pre-scene path for a build that has not adopted
+`UIApplicationSceneManifest`. Cordova iOS 9 removes `AppDelegate` extension points altogether, at
+which point that half can go.
+
+## Testing
+
+Two suites, because they answer different questions and neither can answer the other's.
+
+```bash
+npm ci
+
+npm run test:ios     # cordova-ios 8.1.1
+npm run test:ios7    # cordova-ios 7.1.1
+npm run test:e2e     # quick action actually arriving, on a booted simulator
+```
+
+**`test:ios*` — cordova-paramedic.** Builds a throwaway app around the plugin, runs the Jasmine
+specs in `tests/` inside it, and reports the results. The assertions cover the JS surface and the
+native round trips; the real value is the build, because `CDVSceneDelegate` exists only from
+cordova-ios 8, and a scene symbol referenced unconditionally breaks 7.x at compile time — silently,
+for anyone still on it. That is why there are two commands rather than one.
+
+`cordova-paramedic` is a git pin rather than a version: the newest release on npm is 0.5.0, from
+2015, and the two fixes this needs — accepting a versioned platform spec such as `ios@8.1.1`, and
+passing plugin install arguments as separate argv entries — are only on `master`. Pinned by commit,
+not by branch, so a run cannot pick up unreleased changes on its own.
+
+**`test:e2e` — the quick action itself.** A quick action can only be raised by long-pressing the app
+icon, which is SpringBoard's business and therefore outside the app; paramedic cannot reach it at
+all. `tests/e2e` is the smallest app that can be asked the question — one static shortcut and a page
+that records what arrives — driven through Appium: it long-presses the icon, taps the entry and
+checks the callback fired. It installs the plugin from this repository, so it tests these sources
+rather than a published version.
+
+It needs Appium with the XCUITest driver (`npm i -g appium && appium driver install xcuitest`) and a
+server on port 4723, and it uses whichever simulator is booted unless `IOS_UDID` says otherwise.
+
+Two things about driving the Home Screen cost hours to find, and both look like "the app has no
+quick action" from the outside:
+
+- **`mobile: backgroundApp` breaks the menu.** After it, a long press on the icon either does
+  nothing or starts icon-rearrange mode. Leave the app with `mobile: pressButton {name: 'home'}` —
+  what a person does — and the Home Screen stays responsive. Press it once; twice is the app
+  switcher.
+- **The accessibility tree covers every Home Screen page.** So finding the icon by accessibility id
+  succeeds for an icon nobody can see, and pressing at its rect lands on empty space on the visible
+  page — which is itself how rearrange mode starts. Check `hittable` and swipe pages until it is
+  true.
 
 ## 0. Index
 
@@ -57,7 +125,7 @@ It adds a global `ThreeDeeTouch` object which you can use to interact with the p
 
 ## 4. Usage
 
-Check the [demo code](demo/index.html) for all the tricks in the book, or read on for some copy-pasteable samples.
+There is a runnable app in [`demo/`](demo/) covering everything below — `cd demo && ./run.sh` puts it on a booted simulator. Or read on for some copy-pasteable samples.
 
 Make sure to wait for `deviceready` before using any of these functions.
 

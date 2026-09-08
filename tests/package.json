@@ -1,0 +1,11 @@
+{
+  "name": "@herdwatch/cordova-plugin-3dtouch-tests",
+  "version": "1.4.2",
+  "description": "Automated tests for the 3D Touch plugin, run by cordova-paramedic",
+  "license": "Apache-2.0",
+  "keywords": ["ecosystem:cordova", "cordova-ios"],
+  "cordova": {
+    "id": "@herdwatch/cordova-plugin-3dtouch-tests",
+    "platforms": ["ios"]
+  }
+}

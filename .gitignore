@@ -1,1 +1,7 @@
 .idea
+node_modules/
+platforms/
+plugins/
+*.log
+tests/e2e/platforms/
+tests/e2e/plugins/

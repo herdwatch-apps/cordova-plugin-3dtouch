@@ -1,6 +1,6 @@
 {
   "name": "@herdwatch/cordova-plugin-3dtouch",
-  "version": "1.4.1-fix.1",
+  "version": "1.4.2",
   "description": "Add Quick Actions to your Home Screen which can be triggered by 3D Touch. Also, you can enable Link Preview with this plugin. Supported on iPhone6S an up.",
   "publishConfig": {
     "access": "public",
@@ -35,5 +35,14 @@
   "bugs": {
     "url": "https://github.com/herdwatch-apps/cordova-plugin-3dtouch/issues"
   },
-  "homepage": "https://github.com/herdwatch-apps/cordova-plugin-3dtouch#readme"
+  "homepage": "https://github.com/herdwatch-apps/cordova-plugin-3dtouch#readme",
+  "scripts": {
+    "test:ios": "cordova-paramedic --platform ios@8.1.1 --target 'iPhone-1[6-9]' --plugin . --ci --verbose --cleanUpAfterRun",
+    "test:ios7": "cordova-paramedic --platform ios@7.1.1 --target 'iPhone-1[6-9]' --plugin . --ci --verbose --cleanUpAfterRun",
+    "test:e2e": "tests/e2e/run.sh"
+  },
+  "devDependencies": {
+    "cordova": "13.0.0",
+    "cordova-paramedic": "git+https://github.com/apache/cordova-paramedic.git#e0ebebcd60042f422c645ce9611a4c69a233eb15"
+  }
 }
