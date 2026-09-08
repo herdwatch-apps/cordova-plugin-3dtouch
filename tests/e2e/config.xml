@@ -7,13 +7,15 @@
     <allow-intent href="https://*/*" />
     <platform name="ios">
         <preference name="WKWebViewOnly" value="true" />
-        <!-- One static quick action, matching how the app declares its own. A system icon type is
-             used rather than an icon file so the fixture ships no assets. -->
+        <!-- One static quick action, declared the way a consumer would: in Info.plist, so iOS
+             offers it before the app has ever run. Same title and type as demo/config.xml, so the
+             two agree on what a quick action looks like. A system icon type is used rather than an
+             icon file, so the fixture ships no assets. -->
         <edit-config file="*-Info.plist" mode="merge" target="UIApplicationShortcutItems">
             <array>
                 <dict>
                     <key>UIApplicationShortcutItemIconType</key>
-                    <string>UIApplicationShortcutIconTypePlay</string>
+                    <string>UIApplicationShortcutIconTypeCompose</string>
                     <key>UIApplicationShortcutItemTitle</key>
                     <string>Check in</string>
                     <key>UIApplicationShortcutItemType</key>
