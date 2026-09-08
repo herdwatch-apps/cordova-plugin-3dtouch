@@ -8,6 +8,33 @@
     NSString * quickActionListenerCallbackId;
 };
 
+// A cold start hands the item over in scene:willConnectToSession:options:, which runs before the
+// view controller has loaded its plugins, so there is nothing to deliver to yet. Hold it here and
+// let pluginInitialize drain it; performActionForShortcutItem: then applies its own queue for the
+// case where JS has not registered a listener either.
+static __weak ThreeDeeTouch *tdtLiveInstance = nil;
+static UIApplicationShortcutItem *tdtPendingSceneItem = nil;
+
++ (void) deliverShortcutItem:(UIApplicationShortcutItem *)shortcutItem {
+    ThreeDeeTouch *plugin = tdtLiveInstance;
+    if (plugin) {
+        [plugin performActionForShortcutItem:shortcutItem];
+    } else {
+        tdtPendingSceneItem = shortcutItem;
+    }
+}
+
+- (void) pluginInitialize {
+    [super pluginInitialize];
+    tdtLiveInstance = self;
+
+    if (tdtPendingSceneItem) {
+        UIApplicationShortcutItem *item = tdtPendingSceneItem;
+        tdtPendingSceneItem = nil;
+        [self performActionForShortcutItem:item];
+    }
+}
+
 - (void) performActionForShortcutItem: (UIApplicationShortcutItem *)shortcutItem {
     NSMutableDictionary * item = [NSMutableDictionary dictionaryWithCapacity:2];
     [item setObject:shortcutItem.type forKey:@"type"];

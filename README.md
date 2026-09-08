@@ -10,8 +10,31 @@ Changes from upstream:
 - Replaced the deprecated `UIWebView` with `WKWebView` in the native iOS plugin (`ThreeDeeTouch.h`/`.m`), removing the old `#if !WK_WEB_VIEW_ONLY` conditional entirely
 - Renamed the JS callback API from `onHomeIconPressed` to `registerQuickActionListener` to match upstream's later API
 - Republished the package under the `@herdwatch` npm scope
+- Delivered quick actions under `UIScene` (see below), which cordova-ios 8 adopts
 
 by [Eddy Verbruggen](http://twitter.com/eddyverbruggen)
+
+## Quick actions under UIScene (cordova-ios 8)
+
+From cordova-ios 8 the app declares `UIApplicationSceneManifest`, and UIKit then stops calling
+`application:performActionForShortcutItem:` — the only hook this plugin had. Quick actions arrive
+two other ways instead, and neither reached the plugin:
+
+- **app already running**: UIKit calls `windowScene:performActionForShortcutItem:` on the scene
+  delegate;
+- **app launched by the action**: there is no callback at all. The item comes in as
+  `UISceneConnectionOptions.shortcutItem` while the scene connects.
+
+Both are now handled on `CDVSceneDelegate`. The launch case is a swizzle of
+`scene:willConnectToSession:options:` rather than a category method, because `CDVSceneDelegate`
+already implements that selector to forward URL contexts — a category would REPLACE it and take
+deep links down with it — so the original is called first. The item is then held until the plugin
+exists, since a plugin is instantiated after the scene connects; without that a cold start would
+deliver the action to nothing.
+
+`AppDelegate+threedeetouch.m` keeps the pre-scene path for a build that has not adopted
+`UIApplicationSceneManifest`. Cordova iOS 9 removes `AppDelegate` extension points altogether, at
+which point that half can go.
 
 ## 0. Index
 
