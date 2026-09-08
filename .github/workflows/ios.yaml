@@ -9,6 +9,13 @@
 #   quick action  long-presses the app icon on the Home Screen and checks the action arrives. That
 #                 cannot be done from inside the app, so it needs Appium driving SpringBoard, and
 #                 paramedic cannot cover it at all.
+#
+# Between them that is seven native builds a run -- three paramedic apps, two fixture apps and two
+# copies of WebDriverAgent -- on runners that bill at ten times the Linux rate, so the three that
+# repeat unchanged are cached: the npm downloads, the quick-action fixture app and WebDriverAgent.
+# Both build caches are keyed on the Xcode the image actually resolved to, not on the matrix label,
+# which only pins a range. Paramedic's own build is deliberately NOT cached: proving the plugin
+# still compiles against both cordova-ios versions is the entire point of that job.
 name: iOS Testsuite
 
 on:
@@ -61,6 +68,16 @@ jobs:
         with:
           persist-credentials: false
 
+      # Deliberately not setup-node's own `cache: npm`: its key is the lockfile hash plus darwin and
+      # arm64, which every job here shares, so the five of them would race for one entry and the
+      # winner's ~/.npm is missing whatever the others needed. A key per matrix row keeps each job's
+      # downloads -- paramedic pulls ios-deploy, cordova-ios and the paramedic plugins.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-paramedic-${{ matrix.os }}-${{ matrix.cordovaIos }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: npm-paramedic-${{ matrix.os }}-${{ matrix.cordovaIos }}-
+
       - uses: actions/setup-node@v7
         with:
           node-version: 24
@@ -100,6 +117,13 @@ jobs:
         with:
           persist-credentials: false
 
+      # See the note on the paramedic job for why this is not setup-node's built-in cache.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-quick-action-${{ matrix.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: npm-quick-action-${{ matrix.os }}-
+
       - uses: actions/setup-node@v7
         with:
           node-version: 24
@@ -107,6 +131,29 @@ jobs:
       - uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: ${{ matrix.xcode }}
+
+      - name: Record the toolchain the build caches are keyed on
+        id: toolchain
+        run: |
+          # Both caches below hold Xcode build products, so a new compiler has to miss them. The
+          # matrix asks for a range (16.x), so read what the image actually resolved to -- an image
+          # update inside that range would otherwise hand a stale build to a newer Xcode.
+          slug=$(xcodebuild -version | tr '\n' '-' | tr -cd '[:alnum:].-')
+          slug=${slug%-}
+          echo "xcode=$slug" >> "$GITHUB_OUTPUT"
+          echo "keyed on $slug"
+
+      # The fixture app: a fixed shell around this plugin, built with cordova, ~2.5 min of the job.
+      # Every input to that build is hashed here -- the plugin's own sources and plugin.xml, the
+      # fixture's www/ and config.xml, and run.sh, which carries the cordova and cordova-ios
+      # versions it builds with -- so a hit means the .app would come out identical. No restore-keys
+      # on purpose: a near-miss here is the wrong app, not a warm start.
+      - name: Restore the fixture app
+        id: fixture
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/fixture-app
+          key: fixture-${{ matrix.os }}-${{ steps.toolchain.outputs.xcode }}-${{ hashFiles('plugin.xml', 'package.json', 'src/**', 'www/**', 'tests/e2e/config.xml', 'tests/e2e/www/**', 'tests/e2e/run.sh') }}
 
       - run: npm i -g appium
       - run: appium driver install xcuitest
@@ -148,10 +195,72 @@ jobs:
           open -a Simulator --args -CurrentDeviceUDID "$udid"
           echo "IOS_UDID=$udid" >> "$GITHUB_ENV"
 
+      - name: Record the WebDriverAgent build inputs
+        id: wda
+        run: |
+          # WebDriverAgent is the other native build here, and the expensive one: 219s of a measured
+          # 8m04s job. Its products depend on the WDA sources, on Xcode, and on the deployment
+          # target, which xcodebuild takes from the runtime of the simulator that just booted -- so
+          # all three go in the key. If the bundled copy cannot be found, fall back to a key nothing
+          # can match, so the run rebuilds and re-caches instead of trusting a guess.
+          pkg=$(find "$HOME/.appium" -maxdepth 6 -type f -path '*/appium-webdriveragent/package.json' | head -1 || true)
+          if [ -n "$pkg" ]; then
+            version=$(node -p "require('$pkg').version")
+          else
+            echo "could not find the bundled appium-webdriveragent; keying this run uniquely"
+            version="unknown-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          fi
+          runtime=$(xcrun simctl list devices available --json | python3 -c "import json,os,sys; ds=json.load(sys.stdin)['devices']; u=os.environ['IOS_UDID']; print(next(r for r,v in ds.items() if any(d['udid']==u for d in v)).rsplit('.',1)[-1])")
+          echo "key=$version-$runtime" >> "$GITHUB_OUTPUT"
+          echo "WDA_DERIVED_DATA=$RUNNER_TEMP/wda-derived-data" >> "$GITHUB_ENV"
+          echo "WebDriverAgent $version for $runtime"
+
+      - name: Restore the WebDriverAgent build
+        id: wda-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/wda-derived-data
+          key: wda-${{ matrix.os }}-${{ steps.toolchain.outputs.xcode }}-${{ steps.wda.outputs.key }}
+
       - name: Quick action, cold start and already running
         env:
           LANG: en_US.UTF-8
+          APP_CACHE: ${{ runner.temp }}/fixture-app
+          # On a hit the driver runs the restored WebDriverAgent instead of compiling it. On a miss
+          # this is the string "false" and the build happens as before, landing in the directory
+          # above so the save step below can bank it.
+          WDA_PREBUILT: ${{ steps.wda-cache.outputs.cache-hit == 'true' }}
         run: MODES="cold warm" npm run test:e2e
+
+      - name: Note which builds this run produced
+        id: built
+        # Not always(): this workflow cancels superseded runs, and a build
+        # interrupted mid-write must not be banked as a good one.
+        if: ${{ !cancelled() }}
+        run: |
+          # Deliberately not gated on the probe passing. A build is just as reusable when the test
+          # that followed it failed, and this suite gets iterated on with a red probe far more often
+          # than a green one -- gating on success would mean paying for both builds every attempt.
+          if [ -n "$(find "$RUNNER_TEMP/fixture-app" -maxdepth 1 -name '*.app' 2>/dev/null | head -1 || true)" ]; then
+            echo "fixture=true" >> "$GITHUB_OUTPUT"
+          fi
+          if [ -d "$RUNNER_TEMP/wda-derived-data/Build/Products/Debug-iphonesimulator/WebDriverAgentRunner-Runner.app" ]; then
+            echo "wda=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Save the fixture app
+        if: ${{ !cancelled() && steps.built.outputs.fixture == 'true' && steps.fixture.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/fixture-app
+          key: ${{ steps.fixture.outputs.cache-primary-key }}
+
+      - name: Save the WebDriverAgent build
+        if: ${{ !cancelled() && steps.built.outputs.wda == 'true' && steps.wda-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/wda-derived-data
+          key: ${{ steps.wda-cache.outputs.cache-primary-key }}
 
       - uses: actions/upload-artifact@v4
         if: failure()

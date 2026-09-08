@@ -197,6 +197,20 @@ export async function createSession({ udid, bundleId, firebaseDebug = false, for
   if (isBrowserStack() && !process.env.BS_APP_URL) {
     throw new Error('BS_APP_URL is required for a BrowserStack run (the bs://… from /app-automate/upload)');
   }
+  // WebDriverAgent is compiled from source the first time a session is created, and on a cold CI
+  // runner that measured 219s -- the single most expensive thing in the quick-action job, for a
+  // build that is identical from one run to the next. Left alone, xcodebuild writes it to
+  // ~/Library/Developer/Xcode/DerivedData/WebDriverAgent-<hash>, and the hash is Xcode's, not ours
+  // to predict; WDA_DERIVED_DATA moves it somewhere a cache can address. WDA_PREBUILT then drops
+  // build-for-testing from the xcodebuild invocation, so a restored build is run rather than
+  // recompiled. Only meaningful for a local Xcode, so not sent to the cloud.
+  if (!isBrowserStack() && process.env.WDA_DERIVED_DATA) {
+    capabilities['appium:derivedDataPath'] = process.env.WDA_DERIVED_DATA;
+    // Explicitly against 'true': a cache miss arrives here as the string "false".
+    if (process.env.WDA_PREBUILT === 'true') {
+      capabilities['appium:usePrebuiltWDA'] = true;
+    }
+  }
   if (forceLaunch) {
     capabilities['appium:forceAppLaunch'] = true;
   }

@@ -20,12 +20,30 @@ if ! curl -sf "$APPIUM_URL/status" > /dev/null; then
 fi
 
 CORDOVA_IOS=${CORDOVA_IOS:-8.1.1}
-WORK=$(mktemp -d)
-trap 'rm -rf "$WORK"' EXIT
 
-echo "building the fixture in $WORK against cordova-ios@$CORDOVA_IOS"
-cp -R "$ROOT/tests/e2e/www" "$ROOT/tests/e2e/config.xml" "$WORK/"
-cat > "$WORK/package.json" <<'JSON'
+# APP_CACHE is a directory the caller keeps across runs. The fixture is a fixed app around a plugin
+# whose sources usually have not moved, and building it costs about two and a half minutes on a CI
+# runner, so CI hashes the inputs -- this script included, since it carries both cordova versions --
+# and skips the build when the .app it produced last time is still the .app it would produce now.
+# Nothing is lost by that: proving the plugin still compiles is the paramedic suite's job, and that
+# one builds from scratch every time.
+# Unset by default, which is the right answer on a developer's machine: there the build is usually
+# the thing being changed.
+APP_CACHE=${APP_CACHE:-}
+APP=""
+if [ -n "$APP_CACHE" ]; then
+  APP=$(find "$APP_CACHE" -maxdepth 1 -name '*.app' 2>/dev/null | head -1 || true)
+fi
+
+if [ -n "$APP" ]; then
+  echo "reusing $(basename "$APP") from $APP_CACHE, built against cordova-ios@$CORDOVA_IOS"
+else
+  WORK=$(mktemp -d)
+  trap 'rm -rf "$WORK"' EXIT
+
+  echo "building the fixture in $WORK against cordova-ios@$CORDOVA_IOS"
+  cp -R "$ROOT/tests/e2e/www" "$ROOT/tests/e2e/config.xml" "$WORK/"
+  cat > "$WORK/package.json" <<'JSON'
 {
   "name": "com.example.quickaction",
   "displayName": "QuickAction",
@@ -36,18 +54,28 @@ cat > "$WORK/package.json" <<'JSON'
 }
 JSON
 
-cd "$WORK"
-npm install --silent
-# CocoaPods 1.17 on Ruby 4 fails on a non-UTF-8 locale.
-export LANG=${LANG:-en_US.UTF-8}
-npx cordova platform add "ios@$CORDOVA_IOS" --no-save
-npx cordova plugin add "$ROOT" --no-save
-npx cordova build ios --emulator
+  cd "$WORK"
+  npm install --silent
+  # CocoaPods 1.17 on Ruby 4 fails on a non-UTF-8 locale.
+  export LANG=${LANG:-en_US.UTF-8}
+  npx cordova platform add "ios@$CORDOVA_IOS" --no-save
+  npx cordova plugin add "$ROOT" --no-save
+  npx cordova build ios --emulator
 
-APP=$(find "$WORK/platforms/ios/build" -maxdepth 3 -name '*.app' | head -1)
-if [ -z "$APP" ]; then
-  echo "the build produced no .app" >&2
-  exit 1
+  APP=$(find "$WORK/platforms/ios/build" -maxdepth 3 -name '*.app' | head -1)
+  if [ -z "$APP" ]; then
+    echo "the build produced no .app" >&2
+    exit 1
+  fi
+
+  # Out of the temp directory before the trap removes it, and installed from there, so the copy the
+  # cache keeps is the copy this run was tested against.
+  if [ -n "$APP_CACHE" ]; then
+    mkdir -p "$APP_CACHE"
+    rm -rf "$APP_CACHE/$(basename "$APP")"
+    cp -R "$APP" "$APP_CACHE/"
+    APP="$APP_CACHE/$(basename "$APP")"
+  fi
 fi
 
 # Resolve one device and use it for BOTH the install and the probe. "booted" is not a device: with
