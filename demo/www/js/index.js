@@ -56,12 +56,12 @@ function wireButtons() {
       // Reported continuously while a finger is down, so it goes to the log, not the result card.
       log(`force ${Math.round(touch.force)}% at ${Math.round(touch.x)},${Math.round(touch.y)}`);
     });
-    show('watching force touches -- press and hold anywhere');
+    show('watching force touches — press and hold anywhere');
   });
 
   on('enable-preview', () => {
     window.ThreeDeeTouch.enableLinkPreview();
-    show('link preview enabled -- press and hold the link below');
+    show('link preview enabled — press and hold the link below');
   });
 
   on('disable-preview', () => {
@@ -83,7 +83,7 @@ function wireButtons() {
         // deliberately has no assets. Swap iconType for iconTemplate once you have added one.
         { type: 'favourites', title: 'Show favourites', iconType: 'Love' },
       ],
-      () => show('quick actions configured -- long-press the app icon on the Home Screen'),
+      () => show('quick actions configured — long-press the app icon on the Home Screen'),
       (error) => show('configureQuickActions failed: ' + error),
     );
   });
