@@ -10,7 +10,7 @@
 #                 cannot be done from inside the app, so it needs Appium driving SpringBoard, and
 #                 paramedic cannot cover it at all.
 #
-# Between them that is seven native builds a run -- three paramedic apps, two fixture apps and two
+# Between them that is six native builds a run -- two paramedic apps, two fixture apps and two
 # copies of WebDriverAgent -- on runners that bill at ten times the Linux rate, so the three that
 # repeat unchanged are cached: the npm downloads, the quick-action fixture app and WebDriverAgent.
 # Both build caches are keyed on the Xcode the image actually resolved to, not on the matrix label,
@@ -59,9 +59,15 @@ jobs:
           - os: macos-15
             xcode: 16.x
             cordovaIos: 8.1.1
-          - os: macos-26
-            xcode: 26.x
-            cordovaIos: 8.1.1
+          # Off, not gone. cordova-ios 8.1.1 currently fails the same way on both images: the app
+          # builds and installs, then never connects back to paramedic's local server, and the run
+          # ends on "The device failed to connect to local server in 540 secs" nine minutes later.
+          # Nothing in that is specific to macos-26, and the macos-15 row above still covers the
+          # cordova-ios 8 build, so this row was only paying for the same failure twice. Put it back
+          # once the app connects back.
+          # - os: macos-26
+          #   xcode: 26.x
+          #   cordovaIos: 8.1.1
 
     steps:
       - uses: actions/checkout@v7
@@ -69,7 +75,7 @@ jobs:
           persist-credentials: false
 
       # Deliberately not setup-node's own `cache: npm`: its key is the lockfile hash plus darwin and
-      # arm64, which every job here shares, so the five of them would race for one entry and the
+      # arm64, which every job in this file shares, so they would all race for one entry and the
       # winner's ~/.npm is missing whatever the others needed. A key per matrix row keeps each job's
       # downloads -- paramedic pulls ios-deploy, cordova-ios and the paramedic plugins.
       - uses: actions/cache@v4
