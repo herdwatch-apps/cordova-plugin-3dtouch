@@ -1,0 +1,56 @@
+/* Referenced by every page here. Upstream's demo linked this file but never shipped it, so the
+   pages rendered unstyled and the .blink / .event rules below did nothing. */
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 24px 20px calc(24px + env(safe-area-inset-bottom));
+  padding-top: calc(24px + env(safe-area-inset-top));
+  font: 17px/1.45 -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  color: #1c1c1e;
+  background: #f2f2f7;
+  -webkit-text-size-adjust: 100%;
+}
+
+h1 { margin: 0 0 4px; font-size: 28px; }
+
+p.lede { margin: 0 0 24px; color: #6c6c70; }
+
+/* Cordova's own template markup: one paragraph shown while waiting for deviceready, the other
+   once it has fired. #deviceready gets the "received" class from js/index.js. */
+.event { margin: 0 0 20px; padding: 12px 14px; border-radius: 10px; font-size: 15px; }
+.event.listening { background: #ffd8a8; color: #7a4100; }
+.event.received { background: #c3f0ca; color: #0f5323; }
+#deviceready .received,
+#deviceready.received .listening { display: none; }
+#deviceready.received .received { display: block; }
+
+button {
+  display: block;
+  width: 100%;
+  margin: 0 0 10px;
+  padding: 13px 16px;
+  border: 0;
+  border-radius: 10px;
+  background: #007aff;
+  color: #fff;
+  font-size: 17px;
+  font-family: inherit;
+  -webkit-appearance: none;
+}
+button:active { background: #0060d0; }
+
+a { color: #007aff; }
+
+.card {
+  margin: 0 0 20px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #fff;
+}
+.card h2 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: #6c6c70; }
+
+#result { min-height: 1.45em; margin: 0; font-size: 15px; white-space: pre-wrap; word-break: break-word; }
+#result:empty::before { content: "nothing yet"; color: #8e8e93; }
+
+#log { margin: 0; font-size: 12px; line-height: 1.5; white-space: pre-wrap; color: #6c6c70; }
