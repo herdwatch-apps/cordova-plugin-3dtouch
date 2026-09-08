@@ -207,13 +207,17 @@ jobs:
           # WebDriverAgent is the other native build here, and the expensive one: 219s of a measured
           # 8m04s job. Its products depend on the WDA sources, on Xcode, and on the deployment
           # target, which xcodebuild takes from the runtime of the simulator that just booted -- so
-          # all three go in the key. If the bundled copy cannot be found, fall back to a key nothing
-          # can match, so the run rebuilds and re-caches instead of trusting a guess.
-          pkg=$(find "$HOME/.appium" -maxdepth 6 -type f -path '*/appium-webdriveragent/package.json' | head -1 || true)
-          if [ -n "$pkg" ]; then
-            version=$(node -p "require('$pkg').version")
-          else
-            echo "could not find the bundled appium-webdriveragent; keying this run uniquely"
+          # all three go in the key.
+          #
+          # The version is asked of node's resolver rather than found by walking ~/.appium: that
+          # tree is enormous, and a `find -maxdepth 6` over it measured 49s, a fifth of the build
+          # this cache exists to avoid. Resolving from the driver's own directory also copes with
+          # the dependency being hoisted or nested, which a fixed path would not. If it cannot be
+          # resolved at all, key the run uniquely so it rebuilds and re-caches rather than trusting
+          # a guess at what the restored products were built from.
+          version=$(node -e "console.log(require(require.resolve('appium-webdriveragent/package.json',{paths:['$HOME/.appium/node_modules/appium-xcuitest-driver']})).version)" 2>/dev/null || true)
+          if [ -z "$version" ]; then
+            echo "could not resolve appium-webdriveragent; keying this run uniquely"
             version="unknown-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
           fi
           runtime=$(xcrun simctl list devices available --json | python3 -c "import json,os,sys; ds=json.load(sys.stdin)['devices']; u=os.environ['IOS_UDID']; print(next(r for r,v in ds.items() if any(d['udid']==u for d in v)).rsplit('.',1)[-1])")
