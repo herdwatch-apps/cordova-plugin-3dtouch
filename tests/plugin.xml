@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
+        id="@herdwatch/cordova-plugin-3dtouch-tests"
+        version="1.4.2">
+    <name>3D Touch Tests</name>
+    <license>Apache 2.0</license>
+
+    <dependency id="@herdwatch/cordova-plugin-3dtouch" url=".." />
+
+    <js-module src="tests.js" name="tests">
+    </js-module>
+</plugin>
